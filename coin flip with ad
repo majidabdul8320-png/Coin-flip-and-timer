@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PRO Coin Flip • Timer with New Ads</title>
+    <!-- 
+        FULL DETAILED CODE – COIN FLIP + TIMER + NEW ADS
+        - Replaced old ads with new iframe-based ad code
+        - Top ad, bottom ad, and between cards ad (total 3 placements)
+        - All interactive features: flying coin, cumulative spin, lap timer, history
+        - Uses event listeners for robust functionality
+    -->
+    <style>
+        /* -------------------- GLOBAL STYLES -------------------- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(circle at 10% 30%, #1b3b4f, #0a1c28);
+            color: #f0f6fc;
+            padding: 16px;
+        }
+
+        /* ----- Ad Containers (top, middle, bottom) ----- */
+        .ad-container {
+            width: 100%;
+            max-width: 1100px;
+            margin: 20px auto;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(8px);
+            border-radius: 20px;
+            padding: 15px;
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            min-height: 330px; /* Reserve space for 300px height ad + padding */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .ad-container-top {
+            margin-top: 0;
+        }
+
+        .ad-container-middle {
+            margin: 20px auto;
+            max-width: 1100px;
+            width: 100%;
+            min-height: 330px;
+        }
+
+        .ad-container-bottom {
+            margin-bottom: 0;
+        }
+
+        /* Ensure iframe responsiveness */
+        .ad-container iframe {
+            max-width: 100%;
+            border-radius: 12px;
+        }
+
+        /* ----- Main App Wrapper (two cards side by side) ----- */
+        .wrapper {
+            max-width: 1100px;
+            width: 100%;
+            display: flex;
+            gap: 28px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: stretch;
+        }
+
+        /* ----- Glass Card Style ----- */
+        .card {
+            flex: 1 1 360px;
+            background: rgba(20, 40, 55, 0.6);
+            backdrop-filter: blur(16px) saturate(180%);
+            -webkit-backdrop-filter: blur(16px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 36px;
+            padding: 30px 24px;
+            box-shadow: 0 30px 50px -20px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.02) inset;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card:hover {
+            box-shadow: 0 40px 60px -15px #000000cc, 0 0 0 1px rgba(255,215,0,0.15) inset;
+            transform: translateY(-3px);
+        }
+
+        h2 {
+            font-weight: 500;
+            font-size: 1.9rem;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 2px solid rgba(255,215,0,0.3);
+            padding-bottom: 14px;
+            margin-bottom: 24px;
+        }
+
+        /* ---------- COIN SECTION (with flying & spinning) ---------- */
+        .coin-area {
+            perspective: 1200px;
+            display: flex;
+            justify-content: center;
+            margin: 8px 0 10px;
+        }
+
+        .coin-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 170px;
+            height: 170px;
+            transition: filter 0.3s;
+            will-change: transform;
+        }
+
+        /* flying animation (applied via JS) */
+        .coin-wrapper.fly {
+            animation: flyAndSpin 0.9s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+        }
+
+        @keyframes flyAndSpin {
+            0% {
+                transform: translateY(0) translateX(0) scale(1);
+                filter: drop-shadow(0 10px 10px rgba(0,0,0,0.5));
+            }
+            20% {
+                transform: translateY(-40px) translateX(12px) scale(1.25);
+                filter: drop-shadow(0 30px 25px rgba(0,0,0,0.7));
+            }
+            50% {
+                transform: translateY(-70px) translateX(-15px) scale(1.4);
+                filter: drop-shadow(0 40px 30px #000000cc);
+            }
+            80% {
+                transform: translateY(-25px) translateX(8px) scale(1.15);
+                filter: drop-shadow(0 20px 20px rgba(0,0,0,0.6));
+            }
+            100% {
+                transform: translateY(0) translateX(0) scale(1);
+                filter: drop-shadow(0 10px 10px rgba(0,0,0,0.5));
+            }
+        }
+
+        .coin {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.9s cubic-bezier(0.23, 1, 0.32, 1);
+            transform: rotateY(0deg);
+        }
+
+        .face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            font-weight: 700;
+            backface-visibility: hidden;
+            box-shadow: 0 0 0 2px rgba(255,255,255,0.2) inset, 0 10px 20px rgba(0,0,0,0.3);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .head {
+            background: radial-gradient(circle at 30% 30%, #f9e181, #d4af37);
+            color: #1f2c38;
+            border: 2px solid #f5e56b;
+        }
+
+        .tail {
+            background: radial-gradient(circle at 30% 30%, #e0e5ec, #a0aab5);
+            color: #1f2c38;
+            transform: rotateY(180deg);
+            border: 2px solid #cbd5e1;
+        }
+
+        /* ----- Buttons (unified style) ----- */
+        .button-group {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 18px 0 12px;
+        }
+
+        .btn {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.15);
+            padding: 10px 24px;
+            border-radius: 60px;
+            font-size: 1rem;
+            font-weight: 500;
+            color: white;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+            transition: 0.2s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            letter-spacing: 0.3px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(145deg, #0077be, #005c96);
+            border-color: #7ec8ff;
+            font-weight: 600;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(145deg, #1e8ad3, #0069b4);
+            border-color: #b0e0ff;
+            transform: scale(1.02);
+            box-shadow: 0 8px 18px #005c96a0;
+        }
+
+        .btn-secondary {
+            background: rgba(25, 45, 60, 0.8);
+            border-color: #4a5f73;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(45, 70, 90, 0.9);
+            border-color: #7f9fbb;
+            transform: scale(1.02);
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn:disabled {
+            opacity: 0.4;
+            pointer-events: none;
+            filter: grayscale(0.6);
+        }
+
+        /* ----- Statistics Grid ----- */
+        .stats-grid {
+            background: rgba(0, 0, 0, 0.25);
+            border-radius: 28px;
+            padding: 18px 16px;
+            margin: 12px 0;
+            display: flex;
+            justify-content: space-between;
+            border: 1px solid #3a5068;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            color: #b4ccde;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 600;
+            line-height: 1.2;
+            color: #ffe484;
+        }
+
+        /* ----- History Panel (coin) ----- */
+        .history-box {
+            background: rgba(0,0,0,0.2);
+            border-radius: 20px;
+            padding: 16px;
+            border: 1px solid #3d566b;
+            margin-top: 10px;
+        }
+
+        .history-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            color: #cbddee;
+            font-weight: 400;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+        }
+
+        .history-list {
+            max-height: 115px;
+            overflow-y: auto;
+            font-size: 0.9rem;
+            padding-right: 6px;
+            scrollbar-width: thin;
+            scrollbar-color: #ffd966 #2a4050;
+        }
+
+        .history-list::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .history-list::-webkit-scrollbar-track {
+            background: #2a4050;
+            border-radius: 10px;
+        }
+
+        .history-list::-webkit-scrollbar-thumb {
+            background: #ffd966;
+            border-radius: 10px;
+        }
+
+        .history-entry {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px dashed #4b6377;
+            color: #d3e4f5;
+        }
+
+        /* ---------- TIMER SECTION (with lap) ---------- */
+        .timer-display {
+            font-size: 5rem;
+            font-weight: 300;
+            font-family: 'JetBrains Mono', monospace;
+            text-align: center;
+            background: #0c1a24;
+            padding: 20px 10px;
+            border-radius: 50px;
+            letter-spacing: 8px;
+            border: 1px solid #ffd96655;
+            box-shadow: 0 0 20px #00a6ff20;
+            margin: 15px 0 10px;
+            color: #e9f2fa;
+            text-shadow: 0 0 8px #7ec8ff;
+        }
+
+        .lap-list {
+            background: #0e1e2b;
+            border-radius: 24px;
+            padding: 18px;
+            margin-top: 20px;
+            border: 1px solid #596f83;
+        }
+
+        .lap-header {
+            display: flex;
+            justify-content: space-between;
+            font-weight: 500;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #57708a;
+            color: #ffdb8b;
+        }
+
+        .laps-container {
+            max-height: 130px;
+            overflow-y: auto;
+            font-size: 0.95rem;
+            scrollbar-width: thin;
+        }
+
+        .lap-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 4px;
+            border-bottom: 1px dotted #3f5669;
+            color: #cbddee;
+        }
+
+        .flex-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .mt-2 { margin-top: 10px; }
+        .opacity-6 { opacity: 0.7; }
+
+        /* Responsive: stack cards vertically on smaller screens */
+        @media (max-width: 900px) {
+            .wrapper {
+                flex-direction: column;
+                gap: 28px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- ========== TOP AD (New iframe ad) ========== -->
+    <div class="ad-container ad-container-top">
+        <script>
+            atOptions = {
+                'key' : 'c483c2969e5f931b55f0681edbeb39b4',
+                'format' : 'iframe',
+                'height' : 300,
+                'width' : 160,
+                'params' : {}
+            };
+        </script>
+        <script src="https://www.highperformanceformat.com/c483c2969e5f931b55f0681edbeb39b4/invoke.js"></script>
+    </div>
+
+    <!-- ========== MAIN APP: COIN + TIMER ========== -->
+    <div class="wrapper">
+        <!-- ---------- COIN FLIP CARD ---------- -->
+        <div class="card">
+            <h2>🪙 SPINNING FLIP</h2>
+            <div class="coin-area">
+                <div class="coin-wrapper" id="coinWrapper">
+                    <div class="coin" id="coin3d">
+                        <div class="face head">HEADS</div>
+                        <div class="face tail">TAILS</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-primary" id="flipBtn">✨ Toss in air</button>
+                <button class="btn btn-secondary" id="resetStatsBtn">⟲ Reset stats</button>
+            </div>
+
+            <!-- Stats display -->
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-label">total</div>
+                    <div class="stat-value" id="statTotal">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">heads</div>
+                    <div class="stat-value" id="statHeads">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">tails</div>
+                    <div class="stat-value" id="statTails">0</div>
+                </div>
+            </div>
+
+            <!-- Flip history with timestamps -->
+            <div class="history-box">
+                <div class="history-title">
+                    <span>📋 last flips</span>
+                    <span style="font-size:0.8rem;">(newest first)</span>
+                </div>
+                <div class="history-list" id="historyContainer"></div>
+            </div>
+        </div>
+
+        <!-- ---------- TIMER CARD ---------- -->
+        <div class="card">
+            <h2>⏱️ PRO TIMER</h2>
+            <div class="timer-display" id="timerDisplay">00:00</div>
+
+            <div class="button-group">
+                <button class="btn btn-primary" id="startTimerBtn">▶ Start</button>
+                <button class="btn btn-secondary" id="pauseTimerBtn">⏸️ Pause</button>
+                <button class="btn btn-secondary" id="lapTimerBtn">⏱️ Lap</button>
+                <button class="btn" id="resetTimerBtn">⏹️ Reset</button>
+            </div>
+
+            <!-- Lap list container -->
+            <div class="lap-list">
+                <div class="lap-header">
+                    <span>Lap</span>
+                    <span>Time (mm:ss)</span>
+                </div>
+                <div class="laps-container" id="lapListContainer">
+                    <div class="lap-item" style="justify-content:center; opacity:0.6;">— no laps —</div>
+                </div>
+            </div>
+
+            <!-- Timer state indicator -->
+            <div class="flex-row mt-2">
+                <span class="opacity-6" id="timerStateIndicator">⏹️ Stopped</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== MIDDLE AD (between cards - new iframe ad) ========== -->
+    <div class="ad-container ad-container-middle">
+        <script>
+            atOptions = {
+                'key' : 'c483c2969e5f931b55f0681edbeb39b4',
+                'format' : 'iframe',
+                'height' : 300,
+                'width' : 160,
+                'params' : {}
+            };
+        </script>
+        <script src="https://www.highperformanceformat.com/c483c2969e5f931b55f0681edbeb39b4/invoke.js"></script>
+    </div>
+
+    <!-- ========== BOTTOM AD (new iframe ad) ========== -->
+    <div class="ad-container ad-container-bottom">
+        <script>
+            atOptions = {
+                'key' : 'c483c2969e5f931b55f0681edbeb39b4',
+                'format' : 'iframe',
+                'height' : 300,
+                'width' : 160,
+                'params' : {}
+            };
+        </script>
+        <script src="https://www.highperformanceformat.com/c483c2969e5f931b55f0681edbeb39b4/invoke.js"></script>
+    </div>
+
+    <!-- ========== JAVASCRIPT (all logic, using event listeners) ========== -->
+    <script>
+        (function() {
+            // Wait for DOM to be fully loaded before attaching listeners
+            document.addEventListener('DOMContentLoaded', function() {
+                
+                // -------------------- COIN MODULE --------------------
+                const coinModule = {
+                    // state
+                    total: 0,
+                    heads: 0,
+                    tails: 0,
+                    // DOM elements
+                    coinElement: document.getElementById('coin3d'),
+                    wrapperElement: document.getElementById('coinWrapper'),
+                    flipBtn: document.getElementById('flipBtn'),
+                    resetBtn: document.getElementById('resetStatsBtn'),
+                    historyContainer: document.getElementById('historyContainer'),
+                    // animation guard
+                    animating: false,
+                    // cumulative rotation (spins accumulate)
+                    currentRotation: 0,
+
+                    // Update the stats display
+                    updateStatsUI: function() {
+                        document.getElementById('statTotal').innerText = this.total;
+                        document.getElementById('statHeads').innerText = this.heads;
+                        document.getElementById('statTails').innerText = this.tails;
+                    },
+
+                    // Add a new entry to history with timestamp
+                    addHistory: function(result) {
+                        const entry = document.createElement('div');
+                        entry.className = 'history-entry';
+                        const now = new Date();
+                        const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                        entry.innerHTML = `<span>${result}</span> <span style="color:#b7c9dd;">${timeStr}</span>`;
+                        this.historyContainer.prepend(entry);
+                        // Keep only last 12 entries to avoid clutter
+                        if (this.historyContainer.children.length > 12) {
+                            this.historyContainer.removeChild(this.historyContainer.lastElementChild);
+                        }
+                    },
+
+                    // Main flip logic
+                    flip: function() {
+                        if (this.animating) return; // prevent double flip
+
+                        this.animating = true;
+                        this.flipBtn.disabled = true;   // disable button during animation
+
+                        // Trigger flying animation on wrapper
+                        this.wrapperElement.classList.add('fly');
+
+                        // Random outcome
+                        const isHeads = Math.random() < 0.5;
+                        const result = isHeads ? 'HEADS' : 'TAILS';
+                        
+                        // Add spin: 8 full turns for heads, 8.5 for tails (so final face is correct)
+                        const spin = isHeads ? 2880 : 3060;
+                        this.currentRotation += spin;
+                        
+                        // Apply rotation to coin
+                        this.coinElement.style.transform = `rotateY(${this.currentRotation}deg)`;
+
+                        // After animation completes, update stats and clean up
+                        setTimeout(() => {
+                            this.total++;
+                            if (isHeads) {
+                                this.heads++;
+                            } else {
+                                this.tails++;
+                            }
+                            this.updateStatsUI();
+                            this.addHistory(result);
+
+                            // Remove flying class and re-enable button
+                            this.wrapperElement.classList.remove('fly');
+                            this.animating = false;
+                            this.flipBtn.disabled = false;
+                        }, 900); // matches animation duration (0.9s)
+                    },
+
+                    // Reset statistics and clear history
+                    resetStats: function() {
+                        if (this.animating) return; // don't reset while flipping
+                        this.total = 0;
+                        this.heads = 0;
+                        this.tails = 0;
+                        this.updateStatsUI();
+                        // Clear history
+                        this.historyContainer.innerHTML = '';
+                        // Show a temporary placeholder
+                        const placeholder = document.createElement('div');
+                        placeholder.className = 'history-entry';
+                        placeholder.style.justifyContent = 'center';
+                        placeholder.style.opacity = '0.5';
+                        placeholder.innerText = '✨ history cleared';
+                        this.historyContainer.appendChild(placeholder);
+                        setTimeout(() => { 
+                            if (this.historyContainer.firstChild === placeholder) 
+                                placeholder.remove(); 
+                        }, 1500);
+                    }
+                };
+
+                // -------------------- TIMER MODULE --------------------
+                const timerModule = {
+                    seconds: 0,
+                    intervalId: null,
+                    running: false,
+                    laps: [],
+                    // DOM elements
+                    displayElem: document.getElementById('timerDisplay'),
+                    lapContainer: document.getElementById('lapListContainer'),
+                    stateIndicator: document.getElementById('timerStateIndicator'),
+                    startBtn: document.getElementById('startTimerBtn'),
+                    pauseBtn: document.getElementById('pauseTimerBtn'),
+                    lapBtn: document.getElementById('lapTimerBtn'),
+                    resetBtn: document.getElementById('resetTimerBtn'),
+
+                    // Format seconds as MM:SS
+                    formatTime: function(totalSec) {
+                        const mins = Math.floor(totalSec / 60);
+                        const secs = totalSec % 60;
+                        return `${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
+                    },
+
+                    // Update the timer display
+                    updateDisplay: function() {
+                        this.displayElem.innerText = this.formatTime(this.seconds);
+                    },
+
+                    // Render lap list
+                    renderLaps: function() {
+                        if (this.laps.length === 0) {
+                            this.lapContainer.innerHTML = '<div class="lap-item" style="justify-content:center; opacity:0.6;">— no laps —</div>';
+                            return;
+                        }
+                        let html = '';
+                        this.laps.forEach((lapTime, idx) => {
+                            html += `<div class="lap-item"><span>Lap ${idx+1}</span><span>${this.formatTime(lapTime)}</span></div>`;
+                        });
+                        this.lapContainer.innerHTML = html;
+                    },
+
+                    // Start timer
+                    start: function() {
+                        if (this.running) return;
+                        this.running = true;
+                        this.stateIndicator.innerHTML = '▶ Running';
+                        this.intervalId = setInterval(() => {
+                            this.seconds++;
+                            this.updateDisplay();
+                        }, 1000);
+                    },
+
+                    // Pause timer
+                    pause: function() {
+                        if (!this.running) return;
+                        clearInterval(this.intervalId);
+                        this.intervalId = null;
+                        this.running = false;
+                        this.stateIndicator.innerHTML = '⏸️ Paused';
+                    },
+
+                    // Reset timer (stop, zero, clear laps)
+                    reset: function() {
+                        clearInterval(this.intervalId);
+                        this.intervalId = null;
+                        this.running = false;
+                        this.seconds = 0;
+                        this.laps = [];
+                        this.updateDisplay();
+                        this.renderLaps();
+                        this.stateIndicator.innerHTML = '⏹️ Stopped';
+                    },
+
+                    // Record a lap
+                    lap: function() {
+                        if (!this.running) return; // only record laps when timer is running
+                        this.laps.push(this.seconds);
+                        this.renderLaps();
+                    }
+                };
+
+                // ----- Attach event listeners (no onclick in HTML) -----
+                coinModule.flipBtn.addEventListener('click', coinModule.flip.bind(coinModule));
+                coinModule.resetBtn.addEventListener('click', coinModule.resetStats.bind(coinModule));
+
+                timerModule.startBtn.addEventListener('click', timerModule.start.bind(timerModule));
+                timerModule.pauseBtn.addEventListener('click', timerModule.pause.bind(timerModule));
+                timerModule.lapBtn.addEventListener('click', timerModule.lap.bind(timerModule));
+                timerModule.resetBtn.addEventListener('click', timerModule.reset.bind(timerModule));
+
+                // Initial UI updates
+                coinModule.updateStatsUI();
+                timerModule.updateDisplay();
+
+                // Add a friendly placeholder in history if empty
+                if (coinModule.historyContainer.children.length === 0) {
+                    let placeholder = document.createElement('div');
+                    placeholder.className = 'history-entry';
+                    placeholder.style.justifyContent = 'center';
+                    placeholder.style.opacity = '0.5';
+                    placeholder.innerText = '⬆️ flip to start';
+                    coinModule.historyContainer.appendChild(placeholder);
+                }
+
+                // Expose modules globally (optional, for debugging)
+                window.coinFlip = coinModule;
+                window.timerControl = timerModule;
+            });
+        })();
+    </script>
+
+    <!-- Small additional style for timer indicator -->
+    <style>
+        #timerStateIndicator {
+            background: #172f3c;
+            padding: 5px 16px;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            border: 1px solid #4e6a7c;
+        }
+        .btn:focus-visible {
+            outline: 2px solid #ffd966;
+            outline-offset: 2px;
+        }
+        .coin-wrapper {
+            filter: drop-shadow(0 10px 10px rgba(0,0,0,0.5));
+        }
+        /* Center ad content */
+        .ad-container {
+            flex-direction: column;
+        }
+    </style>
+</body>
+</html>
